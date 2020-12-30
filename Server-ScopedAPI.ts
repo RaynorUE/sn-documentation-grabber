@@ -1,32 +1,46 @@
-//copy paste this into browser first:
-// https://raw.githubusercontent.com/axios/axios/master/dist/axios.min.js  <--- copy/paste the JS from axios so it is available.
+import axios from 'axios';
+declare var window:any; //handling window var usage..
 
+if(!axios){
+    throw 'Axios is not loaded. Please load: https://raw.githubusercontent.com/axios/axios/master/dist/axios.min.js';
+}
 
-const releasesURL = `https://developer.servicenow.com/api/snc/v1/dev/releaseInfo?sysparm_data={"action":"release.versions","data":{}}`;
-//"Active Versions" should be whats pulled..  Inactive versions if you want to "build it all"..? Nah...
+(async function(){
+    const releasesURL = `https://developer.servicenow.com/api/snc/v1/dev/releaseInfo?sysparm_data={"action":"release.versions","data":{}}`;
+    //"Active Versions" should be whats pulled..  Inactive versions if you want to "build it all"..? Nah...
+    
+    const baseURI = `/devportal.do`;
+    
+    const releaseName = 'paris';
+    
+    
+    //Data request for "Name Spaces && Classes";
+    var serverDocRequest = `{
+        "action": "api.navlist",
+        "data": {
+            "navbar": "server",
+            "release": "${releaseName}"
+        }
+    }`
+    
+    //data request for "Specific Class"??
+    var specificClassData = `{
+        "action": "api.docs",
+        "data": {
+            "id": "ActionAPIBoth",
+            "release": "${releaseName}"
+        }
+    }`;
 
-const baseURI = `https://developer.servicenow.com/devportal.do?sysparm_data=`;
+    let serverDocumentation:any = await axios.get(`${baseURI}`, {params: {sysparm_data : serverDocRequest}});
 
-const releaseName = 'paris';
-
-
-//Data request for "Name Spaces && Classes";
-var serverData = `{
-    "action": "api.navlist",
-    "data": {
-        "navbar": "server",
-        "release": "${releaseName}"
+    if(!serverDocumentation){
+        throw 'Did not retrieve any server Docs!';
     }
-}`
 
-//data request for "Specific Class"??
-var specificClassData = {
-    "action": "api.docs",
-    "data": {
-        "id": "ActionAPIBoth",
-        "release": "paris"
-    }
-};
+})()
+
+
 
 fetch(`${baseURI}${serverData}`, {
         "headers": {
@@ -46,7 +60,7 @@ fetch(`${baseURI}${serverData}`, {
                 namespace: serverItem.dc_identifier == 'no-namespace' ? '' : serverItem.dc_identifier,
                 classes: []
             }
-
+            /*
             newServerItem.classes = serverItem.items.map((classItem) => {
                 let newClassItem = {
                     description: "",
@@ -67,7 +81,7 @@ fetch(`${baseURI}${serverData}`, {
 
                 const classDataFromServer = await fetch(classSpecificsURL, {
                     "headers": {
-                        "accept": "application/json, text/plain, */*",
+                        "accept": "application/json",
                         "x-usertoken": window.g_ck
                     },
                     "method": "GET",
@@ -135,7 +149,7 @@ fetch(`${baseURI}${serverData}`, {
 
                 return newClassItem;
             })
-
+            */
             return newServerItem;
         })
 
