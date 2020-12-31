@@ -6,20 +6,12 @@ if (!axios) {
     const releasesURL = `https://developer.servicenow.com/api/snc/v1/dev/releaseInfo?sysparm_data={"action":"release.versions","data":{}}`;
     //"Active Versions" should be whats pulled..  Inactive versions if you want to "build it all"..? Nah...
     const baseURI = `/devportal.do`;
-    const releaseName = 'paris';
+    const releaseName = 'paris'; //update release name for other releases.
     //Data request for "Name Spaces && Classes";
-    var serverDocRequest = `{
+    let serverDocRequest = `{
         "action": "api.navlist",
         "data": {
             "navbar": "server",
-            "release": "${releaseName}"
-        }
-    }`;
-    //data request for "Specific Class"??
-    var specificClassData = `{
-        "action": "api.docs",
-        "data": {
-            "id": "ActionAPIBoth",
             "release": "${releaseName}"
         }
     }`;
@@ -37,7 +29,7 @@ if (!axios) {
             classes: []
         };
         if (nameSpaceItem.items && nameSpaceItem.items.length > 0) {
-            newServerItem.classes = nameSpaceItem.items.map(async (classItem) => {
+            var newServerItemClasses = nameSpaceItem.items.map(async (classItem) => {
                 let newClassItem = {
                     description: "",
                     short_description: "",
@@ -63,10 +55,10 @@ if (!axios) {
                     if (classData.class_data.children && classData.class_data.children.length > 0) {
                         newClassItem.methods = classData.class_data.children.map((methodItem) => {
                             var newMethodItem = {
-                                name: methodItem.dc_identifier,
+                                identifier: methodItem.dc_identifier,
                                 short_description: methodItem.text || "",
                                 description: methodItem.text2 || "",
-                                label: methodItem.name,
+                                name: methodItem.name,
                                 type: methodItem.type,
                                 examples: [],
                                 params: [],
@@ -111,13 +103,13 @@ if (!axios) {
                 }
                 return newClassItem;
             });
+            console.log('promise alling!');
+            var promResult = await Promise.all(newServerItemClasses);
+            newServerItem.classes = promResult;
+            console.log('done promise.alling!', promResult);
         }
-        console.log('promise alling!');
-        var promResult = await Promise.all(newServerItem.classes);
-        newServerItem.classes = promResult;
-        console.log('done promise.alling!', promResult);
         return newServerItem;
     });
-    var test = await Promise.all(newServerNameSpaces);
-    console.log('New Server Name Spaces promise all test: ', test);
+    var finalData = await Promise.all(newServerNameSpaces);
+    console.log(`${releaseName}: `, JSON.stringify(finalData, null, 4));
 })();

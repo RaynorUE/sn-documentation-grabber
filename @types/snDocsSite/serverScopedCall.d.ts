@@ -65,7 +65,7 @@ declare interface SNClassMethodDetail {
     name: string,
     text: string,
     text2: string,
-    type: string,
+    type: "Cosntructor" | "Method",
 }
 
 declare interface SNClassMethodSpecifics {

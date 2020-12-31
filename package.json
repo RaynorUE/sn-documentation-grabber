@@ -6,7 +6,8 @@
   "dependencies": {
     "@types/axios": "^0.14.0",
     "axios": "^0.21.1",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "turndown": "^7.0.0"
   },
   "devDependencies": {},
   "scripts": {
