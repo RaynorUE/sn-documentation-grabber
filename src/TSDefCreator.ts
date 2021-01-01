@@ -1,12 +1,14 @@
-const fs = require('fs');
-const path = require('path');
-const TD = require('turndown');
+import * as fs from 'fs';
+import * as path from 'path';
+var TurndownService = require('turndown')
+ 
+var TD = new TurndownService();
 
 var serverDataJSON = fs.readFileSync(path.resolve('.', 'SNDocData', 'paris_server.json')).toString();
 
 var serverData: ServerItem[] = JSON.parse(serverDataJSON);
 
-var serverTypeDefs = [];
+var serverTypeDefs:string[] = [];
 
 serverData.forEach((serverItem) => {
 
@@ -29,16 +31,19 @@ serverData.forEach((serverItem) => {
         classItemDef.push(` * `);
         classItemDef.push(' */');//END JSdoc Block
 
-        classItemDef.push(`declare class ${classItem.name} {`);
+        classItemDef.push(`declare class ${handleTerribleClassNames(classItem.name)} {`);
 
-        var methodItems = [];
+        var methodItems:string[] = [];
 
         classItem.methods.forEach((methodItem) => {
             let methodItemDef = [];
 
+            let funcParams:string[] = [];
+            let returnType = '';
+
             //BEGIN JSDoc Block
             methodItemDef.push(`/**`);
-            methodItemDef.push(` * @description ${methodItem.short_description}`);
+            methodItemDef.push(` * @description ${turndownDescription(methodItem.short_description)}`);
             if(methodItem.description){
                 methodItemDef.push(` * ${turndownDescription(methodItem.description).replace(/\n/g, '\n * ')}`);
                 methodItemDef.push(` * `);
@@ -55,13 +60,16 @@ serverData.forEach((serverItem) => {
 
             if(methodItem.params.length > 0){
                 methodItem.params.forEach((param) => {
-                    methodItemDef.push(` * ${param.name} ${turndownDescription(param.description).replace(/\n/g, ` `)}`);
+                    methodItemDef.push(` * ${param.name} ${turndownDescription(param.description).replace(/\n/g, ` `)}`)
+                    funcParams.push(`${param.name}: ${handleParamTypes(param.type)}`);
                 })
                 methodItemDef.push(` * `);
+
             }
 
             if(methodItem.return.type){
-                methodItemDef.push(` * @returns ${handleReturnTypes(classItem.identifier, methodItem.identifier, methodItem.return.type).newType} ${turndownDescription(methodItem.return.description).replace(/\n/g, ` `)}`);
+                returnType = handleReturnTypes(classItem.identifier, methodItem.identifier, methodItem.return.type).newType;
+                methodItemDef.push(` * @returns ${returnType} ${turndownDescription(methodItem.return.description).replace(/\n/g, ` `)}`);
                 methodItemDef.push(` * `);
             }
 
@@ -69,33 +77,48 @@ serverData.forEach((serverItem) => {
             methodItemDef.push(` */`);
             
             //declare method with input param and type
+            returnType = returnType ==  `` ? `` : `: ${returnType}`;
 
+            if(methodItem.type == 'Constructor'){
+                methodItem.name = 'constructor';
+            }
+            methodItemDef.push(`${methodItem.name.replace(/\(.*/, '')}(${funcParams.join(',')}) ${returnType}`);
+
+            methodItems.push(methodItemDef.join('\n\t'));
         })
+        classItemDef.push(methodItems.join('\n\t'))
+        classItemDef.push(`}`);
+        serverTypeDefs.push(classItemDef.join('\n\t'));
     })
-
-
 
 
     if (serverItem.namespace) {
         //close namespace declration
         serverItemDef.push(`}`);
+        serverTypeDefs.push(serverItemDef.join('\n\t'));
+    } else {
+        serverTypeDefs.push(serverItemDef.join('\n'));
+
     }
 
-    //add to our list of ServerType Definitions.
-    serverTypeDefs.push(serverItemDef.join('\n'));
-
 })
+
+fs.writeFileSync(path.resolve('.', 'SNDocData', 'paris_server_converted.d.ts'), serverTypeDefs.join('\n'))
 
 function handleParamTypes(paramType: string) {
     if(paramType == "Boolean" || paramType == "String" || paramType == "Number"){
         return paramType.toLowerCase();
     } else {
-        return paramType;
+        let fixedParam = TD.turndown(paramType);
+        if(fixedParam){
+            fixedParam = fixedParam.split(']')[0].replace('[', '');
+        }
+        return  fixedParam;
     }
 }
 
 function turndownDescription(description: string) {
-    var markdown = TD(description || "");
+    var markdown = TD.turndown(description || "") + "";
     return markdown;
 }
 
@@ -135,12 +158,24 @@ function handleReturnTypes(classIdentifier: string, methodIdentifier: string, re
 function handleTerribleClassNames(className: string) {
     let classNameMap = [
         {
-            crappeName: "",
-            newName: ""
+            crappeName: "Action - Scoped, Global",
+            newName: "Action"
         }
     ]
+
+    let newNameMap = classNameMap.find(nameMap => nameMap.crappeName == className);
+    let newName = className;
+    if(newNameMap){
+        newName = newNameMap.newName;
+    }
+
+    return newName;
+    
 }
 
+function fixTypes (type: string){
+    return TD(type) + '';
+}
 
 /**
  * Returns an array of name space extensions that should be added to the list of name space declrations
