@@ -1,0 +1,18 @@
+[{
+        "crappeName": "Action - Scoped, Global",
+        "newName": "Action"
+    },
+    {
+        "crappeName": "FlowScriptAPI - Scoped",
+        "newName": "FlowScriptAPI"
+    },
+    {
+        "crappeName": "GlideApplicationProperty - Scoped, Global",
+        "newName": "GlideApplicationProperty"
+    },
+    {
+        "crappeName":"GlideDBFunctionBuilder - Scoped, Global",
+        "newName":"GlideDBFunctionBuilder"
+    }
+
+]

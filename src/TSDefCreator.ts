@@ -1,14 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 var TurndownService = require('turndown')
- 
+
 var TD = new TurndownService();
 
-var serverDataJSON = fs.readFileSync(path.resolve('.', 'SNDocData', 'paris_server.json')).toString();
+const serverDataJSON = fs.readFileSync(path.resolve('.', 'SNDocData', 'paris_server.json')).toString();
+const serverData: ServerItem[] = JSON.parse(serverDataJSON);
 
-var serverData: ServerItem[] = JSON.parse(serverDataJSON);
+const methodReturnTypeJSON = fs.readFileSync(path.resolve('.', 'src', 'dataMaps', 'methodReturnTypes.json')).toString();
+const methodReturnTypeMap: ClassMethodReturnTypeMap[] = JSON.parse(methodReturnTypeJSON);
 
-var serverTypeDefs:string[] = [];
+var serverTypeDefs: string[] = [];
 
 serverData.forEach((serverItem) => {
 
@@ -18,71 +20,82 @@ serverData.forEach((serverItem) => {
         serverItemDef.push(`declare namespace ${serverItem.namespace} {`)
     }
 
-  
+
     serverItem.classes.forEach((classItem) => {
         var classItemDef = [];
 
         //Start JSDoc Block
         classItemDef.push(`/**`);
-        classItemDef.push(` * @description ${classItem.short_description}`);
-        if(classItem.description){
-            classItemDef.push(` * ${turndownDescription(classItem.description).replace(/\n/g, '\n * ')}`);
+        classItemDef.push(` * @description ${fixupDescriptions(classItem.short_description)}`);
+        if (classItem.description) {
+            classItemDef.push(` * ${fixupDescriptions(classItem.description).replace(/\n/g, '\t\n * ')}`);
         }
         classItemDef.push(` * `);
         classItemDef.push(' */');//END JSdoc Block
 
         classItemDef.push(`declare class ${handleTerribleClassNames(classItem.name)} {`);
 
-        var methodItems:string[] = [];
+        var methodItems: string[] = [];
 
         classItem.methods.forEach((methodItem) => {
             let methodItemDef = [];
 
-            let funcParams:string[] = [];
+            let funcParams: string[] = [];
             let returnType = '';
 
             //BEGIN JSDoc Block
             methodItemDef.push(`/**`);
-            methodItemDef.push(` * @description ${turndownDescription(methodItem.short_description)}`);
-            if(methodItem.description){
-                methodItemDef.push(` * ${turndownDescription(methodItem.description).replace(/\n/g, '\n * ')}`);
+            methodItemDef.push(` * @description ${fixupDescriptions(methodItem.short_description)}`);
+            if (methodItem.description) {
+                methodItemDef.push(` * ${fixupDescriptions(methodItem.description).replace(/\n/g, '\n\t * ')}`);
                 methodItemDef.push(` * `);
             }
 
-            if(methodItem.examples.length > 0){
+            if (methodItem.examples.length > 0) {
                 methodItem.examples.forEach((example) => {
                     methodItemDef.push(` * @example`);
-                    methodItemDef.push(` * //${turndownDescription(example.description).replace(/\n/g, '\n * //')}`);
-                    methodItemDef.push(` * ${example.script.replace(/\n/g, `\n * `)}`);
+                    methodItemDef.push(` * //${fixupDescriptions(example.description).replace(/\n/g, '\n\t * //')}`);
+                    methodItemDef.push(` * ${fixupExamples(example.script)}`);
                     methodItemDef.push(` * `);
                 })
             }
 
-            if(methodItem.params.length > 0){
+            if (methodItem.params.length > 0) {
                 methodItem.params.forEach((param) => {
-                    methodItemDef.push(` * ${param.name} ${turndownDescription(param.description).replace(/\n/g, ` `)}`)
-                    funcParams.push(`${param.name}: ${handleParamTypes(param.type)}`);
+                    methodItemDef.push(` * @param ${param.name.replace('data.', '')} ${fixupDescriptions(param.description).replace(/\n/g, ` `)}`)
+                    funcParams.push(`${fixupParamName(param.name)}: ${handleParamTypes(param.type)}`);
                 })
                 methodItemDef.push(` * `);
 
             }
 
-            if(methodItem.return.type){
+            if (methodItem.return.type) {
                 returnType = handleReturnTypes(classItem.identifier, methodItem.identifier, methodItem.return.type).newType;
-                methodItemDef.push(` * @returns ${returnType} ${turndownDescription(methodItem.return.description).replace(/\n/g, ` `)}`);
+                methodItemDef.push(` * @returns ${returnType} ${fixupDescriptions(methodItem.return.description).replace(/\n/g, ` `)}`);
                 methodItemDef.push(` * `);
             }
 
             //close JSDoc Tag
             methodItemDef.push(` */`);
-            
-            //declare method with input param and type
-            returnType = returnType ==  `` ? `` : `: ${returnType}`;
 
-            if(methodItem.type == 'Constructor'){
+            //declare method with input param and type
+            returnType = returnType == `` ? `` : `: ${returnType}`;
+
+            if (methodItem.type == 'Constructor') {
                 methodItem.name = 'constructor';
             }
-            methodItemDef.push(`${methodItem.name.replace(/\(.*/, '')}(${funcParams.join(',')}) ${returnType}`);
+            if(methodItem.name.indexOf('identifyCIEnhanced') > -1){
+                methodItemDef.push(`identifyCIEnhanced(source: string, input: any, options: any) ${returnType}`);
+            
+            } else if(methodItem.name.indexOf('createOrUpdateCI') > -1){
+                methodItemDef.push(`createOrUpdateCI(source: string, input: any) ${returnType}`)
+            
+            } else if(methodItem.name.indexOf('getTranslation') > -1){
+                methodItemDef.push(`getTranslation(textToTranslate: string, parms: any) ${returnType}`)
+            } else {
+                methodItemDef.push(`${methodItem.name.replace(/\(.*/, '').replace(/\s/g, '')}(${funcParams.join(',')}) ${returnType}`);
+
+            }
 
             methodItems.push(methodItemDef.join('\n\t'));
         })
@@ -106,20 +119,43 @@ serverData.forEach((serverItem) => {
 fs.writeFileSync(path.resolve('.', 'SNDocData', 'paris_server_converted.d.ts'), serverTypeDefs.join('\n'))
 
 function handleParamTypes(paramType: string) {
-    if(paramType == "Boolean" || paramType == "String" || paramType == "Number"){
+    if (paramType == "Boolean" || paramType == "String" || paramType == "Number") {
         return paramType.toLowerCase();
     } else {
         let fixedParam = TD.turndown(paramType);
-        if(fixedParam){
+        if (fixedParam) {
             fixedParam = fixedParam.split(']')[0].replace('[', '');
         }
-        return  fixedParam;
+        return fixedParam
+        .replace(/ or |\//g, '|')
+        .replace(' object', '')
+        .replace('field Names', 'fieldNames')
+        .replace('an ISO 8601 formatted string', 'string')
+        .replace('Array of Strings', 'string[]')
+        .replace('Array of numbers', 'number[]');
     }
 }
 
-function turndownDescription(description: string) {
+function fixupDescriptions(description: string) {
     var markdown = TD.turndown(description || "") + "";
-    return markdown;
+    return markdown.replace(/\/\*[\W\w]*\*\//gm, '').replace(/\/\*\*[\W\w]*\*\//gm, '');
+}
+
+function fixupExamples(example: string){
+    return example.replace(/\/\*[\W\w]*\*\//gm, '').replace(/\/\*\*[\W\w]*\*\//gm, '').replace(/\n/g, `\n\t * `);
+}
+
+function fixupParamName(paramName: string){
+    return paramName
+    .replace('function', 'jsFunction')
+    .replace('data.', '')
+    .replace('field Names', 'fieldNames')
+    .replace('input.', '')
+    .replace('input.items.', '')
+    .replace('.<field value>', '')
+    .replace('Array of numbers', 'number[]')
+    .replace('scopeName.flowName', 'flowName')
+    .replace(/\.*/g, '');
 }
 
 /**
@@ -132,27 +168,53 @@ function turndownDescription(description: string) {
  * @param returnType The "original" return type..
  */
 function handleReturnTypes(classIdentifier: string, methodIdentifier: string, returnType: string): ClassMethodReturnTypeMap {
-
-    var typeMaps: ClassMethodReturnTypeMap[] = [
-        {
-            classIdentifier: "ActionAPIBoth",
-            methodIdentifier: "Action_getGlideURI",
-            oldType: "Object",
-            newType: "GlideURI"
-        }
-    ]
-
-    var newTypeMap = typeMaps.find((item) => item.classIdentifier == classIdentifier && item.methodIdentifier == methodIdentifier && item.oldType == returnType);
-    if(newTypeMap){
-        return newTypeMap;
-    } else {
-        return <ClassMethodReturnTypeMap>{
+    if (returnType == "Boolean" || returnType == "String" || returnType == "Number") {
+        return {
             classIdentifier: "",
             methodIdentifier: "",
             oldType: "",
-            newType: returnType
+            newType: returnType.toLowerCase()
+        };
+    } else {
+
+        returnType = TD.turndown(returnType).split(']')[0].replace('[', '');
+        var typeMaps: ClassMethodReturnTypeMap[] = [
+            {
+                classIdentifier: "ActionAPIBoth",
+                methodIdentifier: "Action_getGlideURI",
+                oldType: "Object",
+                newType: "GlideURI"
+            }
+        ]
+
+        var newTypeMap = typeMaps.find((item) => item.classIdentifier == classIdentifier && item.methodIdentifier == methodIdentifier && item.oldType == returnType);
+        if (newTypeMap) {
+            return newTypeMap;
+        } else {
+            return <ClassMethodReturnTypeMap>{
+                classIdentifier: "",
+                methodIdentifier: "",
+                oldType: "",
+                newType: fixupReturnType(returnType.trim())
+            }
         }
     }
+}
+
+function fixupReturnType(returnType: string ){
+
+    return returnType.replace('JSON key/value pairs', 'any')
+    .replace(/ or |\//g, ' | ')
+    .replace(' object ', '')
+    .replace('Scoped ', 'Scoped')
+    .replace('messages', '')
+    .replace('JSON object', 'any')
+    .replace(' object', '')
+    .replace('JSON Array', 'strin[]')
+    .replace('<String>.relations.sysId', 'string')
+    .replace('<String>.summary.<class\\_name>.warningCount', 'number')
+    .replace(' - Scoped, Global', '');
+
 }
 
 function handleTerribleClassNames(className: string) {
@@ -165,15 +227,15 @@ function handleTerribleClassNames(className: string) {
 
     let newNameMap = classNameMap.find(nameMap => nameMap.crappeName == className);
     let newName = className;
-    if(newNameMap){
+    if (newNameMap) {
         newName = newNameMap.newName;
     }
 
-    return newName;
-    
+    return newName.replace(/\W/g, '');
+
 }
 
-function fixTypes (type: string){
+function fixTypes(type: string) {
     return TD(type) + '';
 }
 

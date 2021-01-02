@@ -1,0 +1,8 @@
+[
+    {
+        "classIdentifier": "ActionAPIBoth",
+        "methodIdentifier": "Action_getGlideURI",
+        "oldType": "Object",
+        "newType": "GlideURI"
+    }
+]
