@@ -3,15 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const axios_1 = __importDefault(require("axios"));
-if (!axios_1.default) {
+const axios = __importDefault(require("axios"));
+if (!axios.default) {
     throw 'Axios is not loaded. Please load: https://raw.githubusercontent.com/axios/axios/master/dist/axios.min.js';
 }
 (async function () {
     const releasesURL = `https://developer.servicenow.com/api/snc/v1/dev/releaseInfo?sysparm_data={"action":"release.versions","data":{}}`;
     //"Active Versions" should be whats pulled..  Inactive versions if you want to "build it all"..? Nah...
     const baseURI = `/devportal.do`;
-    const releaseName = 'paris'; //update release name for other releases.
+    const releaseName = 'quebec'; //update release name for other releases.
     //Data request for "Name Spaces && Classes";
     let serverDocRequest = `{
         "action": "api.navlist",
@@ -20,8 +20,8 @@ if (!axios_1.default) {
             "release": "${releaseName}"
         }
     }`;
-    axios_1.default.defaults.headers.common["X-UserToken"] = window.g_ck;
-    let nameSpaceDocs = await axios_1.default.get(`${baseURI}`, { params: { sysparm_data: serverDocRequest } });
+    axios.default.defaults.headers.common["X-UserToken"] = window.g_ck;
+    let nameSpaceDocs = await axios.default.get(`${baseURI}`, { params: { sysparm_data: serverDocRequest } });
     console.log('nameSpaceDocs Response: ', nameSpaceDocs);
     if (!nameSpaceDocs.data || !nameSpaceDocs.data.server || nameSpaceDocs.data.server.length == 0) {
         console.error("Did not retrieve any server Docs!");
@@ -51,7 +51,7 @@ if (!axios_1.default) {
                     "release": "${releaseName}"
                 }
             }`;
-                let classDataFromServer = await axios_1.default.get(baseURI, { params: { sysparm_data: classSpecificData } });
+                let classDataFromServer = await axios.default.get(baseURI, { params: { sysparm_data: classSpecificData } });
                 if (classDataFromServer.data && classDataFromServer.data.result && classDataFromServer.data.result.data) {
                     let classData = classDataFromServer.data.result.data;
                     newClassItem.sub_type = classData.class_data.sub_type;
