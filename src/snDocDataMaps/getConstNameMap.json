@@ -1,0 +1,27 @@
+[
+    {
+        "identifier": "ActionAPIBoth",
+        "constName": "action"
+    },
+    {
+        "identifier": "GlideSPScriptable",
+        "constName": "$sp"
+    },
+    {
+        "identifier": "v_queryAPI",
+        "constName": "v_query"
+    }, {
+        "identifier": "v_tableAPI",
+        "constName": "v_table"
+    }, {
+        "identifier": "FindingAPI",
+        "constName": "engine.finding"
+    }, {
+        "identifier": "LinterCheckAstNodeAPIBoth",
+        "constName": "engine.rootNode"
+    },
+    {
+        "identifier": "GlideEmailOutbound",
+        "constName": "email"
+    }
+]

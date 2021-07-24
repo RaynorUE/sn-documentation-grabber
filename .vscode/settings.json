@@ -1,0 +1,90 @@
+{
+    "json.schemas": [
+        {
+            "fileMatch": [
+                "handleClassPropertyTSTypes.json",
+                "snTypesToTSTypes.json"
+            ],
+            "schema": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "identifier": {
+                            "type": "string",
+                            "description": "The dc_identifier from SN Docs Portal"
+                        },
+                        "type": {
+                            "type": "string",
+                            "description": "The type value to be returned / used for matching identifier."
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "fileMatch": [
+                "fixClassNameMap.json"
+            ],
+            "schema": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "identifier": {
+                            "type": "string",
+                            "description": "The dc_identifier from SN Docs Portal"
+                        },
+                        "className": {
+                            "type": "string",
+                            "description": "The type value to be returned / used for matching identifier."
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "fileMatch": [
+                "getConstNameMap.json"
+            ],
+            "schema": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "identifier": {
+                            "type": "string",
+                            "description": "The dc_identifier from SN Docs Portal"
+                        },
+                        "constName": {
+                            "type": "string",
+                            "description": "The type value to be returned / used for matching identifier."
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "fileMatch": [
+                "getExtensionKeyMap.json"
+            ],
+            "schema": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "identifier": {
+                            "type": "string",
+                            "description": "The dc_identifier from SN Docs Portal"
+                        },
+                        "extensionName": {
+                            "type": "string",
+                            "description": "The type value to be returned / used for matching identifier."
+                        }
+                    }
+                }
+            }
+        }
+
+    ]
+}

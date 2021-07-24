@@ -1,0 +1,13 @@
+[{
+        "identifier": "c_RESTResponseV2API",
+        "extensionName": "RESTResponse"
+    },
+    {
+        "identifier": "c_GlideRecordScopedAPI",
+        "extensionName": "GlideRecordSecure"
+    },
+    {
+        "identifier": "",
+        "extensionName": "SOAPResponse"
+    }
+]
