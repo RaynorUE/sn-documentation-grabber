@@ -3,7 +3,7 @@
         {
             "fileMatch": [
                 "handleClassPropertyTSTypes.json",
-                "snTypesToTSTypes.json"
+                "snReturnTypesToTSTypes.json"
             ],
             "schema": {
                 "type": "array",

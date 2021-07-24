@@ -1,0 +1,41 @@
+[{
+        "identifier": "GQ-aggregate_S_S",
+        "type": "GlideQuery"
+    },
+    {
+        "identifier": "SGR-addActiveQuery",
+        "type": "GlideQueryCondition"
+    },
+    {
+        "identifier": "SGR-getED",
+        "type": "GlideElementDescriptor"
+    },
+    {
+        "identifier": "r_ScopedGlideRecordGetElement_String",
+        "type": "GlideElement"
+    },
+    {
+        "identifier": "r_ScopedGlideServletRequestGetParameterNames",
+        "type": "string[]"
+    },
+    {
+        "identifier": "NUtil-getConferenceInputDataTemplate",
+        "type": "{addToWorkNotes: boolean, allowMultconference: boolean, confId: string, fromNumber: string, isNewConference: boolean, items:{id:string, notififyParticipantId:string, phoneNumber:string, email:string}[], message:string, serviceProvider:string, sysId: string, table:string}"
+    },
+    {
+        "identifier": "DCMS-getAllDataClasses",
+        "type": "{parent:{sys_id:string, name:string}, sys_id:string, name:string}[]"
+    },
+    {
+        "identifier": "DCMS-getClassification_S",
+        "type": "{parent:{sys_id:string, name:string}, sys_id:string, name:string}"
+    },
+    {"identifier": "GCPS-parse_S","type": "GlideCurrencyValue"},
+    {"identifier": "FlowAPI-getRunner","type":"ScriptableFlowRunner"},
+    {"identifier": "FlowRunner-action_S", "type":"ScriptableFlowRunner"},
+    {"identifier": "FlowRunner-run", "type":"ScriptableFlowRunnerResult"},
+    {"identifier": "r_RESTAPIResponse-getStreamWriter","type":"RESTAPIResponseStream"},
+    {"identifier": "r_RMV2-execute", "type":"RESTResponse"},
+    {"identifier":"RRV2-getAllHeaders", "type":"{name:string, value:string}[]"},
+    {"identifier": "r_SMV2-execute", "type": "SOAPResponseV2"}
+]

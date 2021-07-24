@@ -1,10 +1,8 @@
 import { SNDocData } from "./SNDocData";
 import { ServerScopedConverted } from '../@Types/snDocsSite/serverScopedConverted';
+import { Downloader } from './downloader';
 declare var window: any
 
-const test = require('./snDocDataMaps/snTypesToTSTypes.json');
-
-console.log('Test:', test);
 (async function () {
     const snDocUtil = new SNDocData();
     let activeVersions = await snDocUtil.getActiveVersions();
@@ -58,6 +56,7 @@ console.log('Test:', test);
 
 
                 })
+                /*
                 const fileName = fixUpFileName((nameSpaceData.namespace || "no-namespace") + '.json');
                 const dLink = document.createElement("a");
                 dLink.style.display = "none";
@@ -72,31 +71,15 @@ console.log('Test:', test);
                 dLink.click();
                 window.URL.revokeObjectURL(dLink.href);
                 document.body.removeChild(dLink);
+                */
 
             })
+
+            await new Downloader().zipSNDocData(result);
 
             console.log({ nameSpaceNames: nameSpaceNames, classNames: classNames, methodReturnTypes:methodReturnTypes, propertyTypes:propertyTypes })
 
         }
-    }
-
-    function fixUpFileName(fileName: string) {
-
-        fileName = fileName.replace('<', '_&lt_');
-        fileName = fileName.replace('>', '_&gt_');
-        fileName = fileName.replace(':', '_&sc_');
-        fileName = fileName.replace('"', '_&qt_');
-        fileName = fileName.replace('/', '_&fs_');
-        fileName = fileName.replace('\\', '_&bs_');
-        fileName = fileName.replace('?', '_&qs_');
-        fileName = fileName.replace('*', '_&as');
-
-        return fileName;
-
-    }
-
-    function dnowloadFile(){
-
     }
 
 })().catch(e => console.error(JSON.stringify(e)));

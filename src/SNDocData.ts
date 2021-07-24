@@ -6,6 +6,8 @@ import TurndownService = require('turndown');
 
 export class SNDocData {
 
+    returnTypesNotMapped: { identifier: string, original_type: string }[] = [];
+
     constructor() {
 
     }
@@ -112,7 +114,7 @@ export class SNDocData {
                                             newMethodItem.examples.push(exampleData);
 
                                         } else if (type == "Return") {
-                                            newMethodItem.return.type = methodDetail.name;
+                                            newMethodItem.return.type = this.convertReturnSNTypesToTSTypes(methodItem.dc_identifier, methodDetail.name);
                                             newMethodItem.return.description = tdService.turndown(methodDetail.text || "");
 
                                         } else if (type == "Parameter") {
@@ -133,11 +135,11 @@ export class SNDocData {
                                     });
                                 }
 
-                                if(propertyType == "Property"){
+                                if (propertyType == "Property") {
                                     newClassItem.properties.push(newMethodItem);
-                                } else if(propertyType == "Constructor") {
+                                } else if (propertyType == "Constructor") {
                                     newClassItem.constructor = newMethodItem;
-                                } else if(propertyType == "Method"){
+                                } else if (propertyType == "Method") {
                                     newClassItem.methods.push(newMethodItem);
                                 } else {
                                     newClassItem.extras.push(newMethodItem);
@@ -202,7 +204,7 @@ export class SNDocData {
     getConstName(identifier: string) {
         //this will be a simple map of "identifier" to get if there is a "const" that should be declared for it
 
-        const map:{identifier:string, constName:string}[] = require("./snDocDataMaps/getConstNameMap.json");
+        const map: { identifier: string, constName: string }[] = require("./snDocDataMaps/getConstNameMap.json");
 
         var mapItem = map.find(ident => identifier == ident.identifier);
         if (mapItem) {
@@ -217,8 +219,8 @@ export class SNDocData {
      */
     fixClassName(identifer: string, className: string) {
 
-        
-        const map:{identifer:string, className:string}[] = require('./snDocDataMaps/fixClassNameMap.json');
+
+        const map: { identifer: string, className: string }[] = require('./snDocDataMaps/fixClassNameMap.json');
 
         var res;
 
@@ -248,7 +250,7 @@ export class SNDocData {
 
     getExtensionKey(identifer: string) {
 
-        const map:{identifier:string, extensionName:string}[] = require('./snDocDataMaps/getExtensionKeyMap.json');
+        const map: { identifier: string, extensionName: string }[] = require('./snDocDataMaps/getExtensionKeyMap.json');
 
         var mapItem = map.find(ident => identifer == ident.identifier);
         if (mapItem) {
@@ -262,72 +264,78 @@ export class SNDocData {
      * Handle SN's goofy param types where they randomly decide to through HTML in there?
      * @param identifier 
      */
-    handleClassPropertyTSTypes(identifier:string){
+    handleClassPropertyTSTypes(identifier: string) {
 
         //propertyTypes 
 
-        const map:{identifier:string, type:string}[] = require('./snDocDataMaps/handleClassPropertyTSTypes.json');
+        const map: { identifier: string, type: string }[] = require('./snDocDataMaps/handleClassPropertyTSTypes.json');
     }
 
-    convertSNTypesToTSTypes(identifier:string, type:string){
+    convertReturnSNTypesToTSTypes(identifier: string, type: string) {
 
         var res = type || '';
+        var typeNotTranslated = false;
+        var typeWasInMap = false
 
         //look in map...
-        if(identifier){
-            const map:{identifier:string, type:string}[] = require('./snDocDataMaps/snTypesToTSTypes.json');
+        if (identifier) {
+            const map: { identifier: string, type: string }[] = require('./snDocDataMaps/snReturnTypesToTSTypes.json');
 
             let mappedItem = map.find((item) => item.identifier == identifier);
-            if(mappedItem){
+            if (mappedItem) {
                 res = mappedItem.type;
-            } else if(identifier.indexOf('GQ_') == 0){
+                typeWasInMap = true;
+            } else if (identifier.indexOf('GQ_') == 0 || identifier.indexOf('Stream-chunk_N') > -1) {
                 res = 'any'; //<--- GlideQuery... a ScriptInclude made it to docs site... It looks like a mess, so it can return "any" type..
+                typeWasInMap = true; //hand coded map to cover multiple, but it counds for logic purposes.
             }
         }
 
         //cleanup SN's generic types..
-        if(res){
-            if(type === 'object'){
+        if (res) {
+            if (type === 'object') {
                 res = 'Object';
-            }
-
-            if(type === 'String'){
+            } else if (type === "sys_id" || type === 'String' || type === "StringMap" || type === "String or Number") {
                 res = 'string';
-            }
-
-            if(type.toLowerCase() === 'strings'){
+            } else if (type.toLowerCase() === 'strings') {
                 res = 'string'; //i know this one is weird..
-            }
-
-            if(type.toLowerCase() === 'none'){
+            } else if (type.toLowerCase() === 'none') {
                 res = 'void';
-            }
-
-            if(type === 'Number'){
+            } else if (type === 'Number' || type === "Number (Long)") {
                 res = 'number';
-            }
-
-            if(type === 'Boolean'){
+            } else if (type === 'Boolean') {
                 res = 'boolean';
-            }
-
-            if(type.toLowerCase() === 'integer' || type.toLowerCase() == 'decimal'){
+            } else if (type.toLowerCase() === 'integer' || type === "int" || type.toLowerCase() == 'decimal') {
                 res = 'number';
-            }
+            } else if (type.toLowerCase() === 'array') {
+                res = 'any[]';
+            } else if (type.toLowerCase() === "optional") {
+                res = 'any | undefined';
+            } else if (type === 'Any') {
+                res = 'any';
+            } else if (type === "MapString") {
+                res = 'any'; //this is really an "object" but a generic object?
+            } else {
+                //handle other random cleanup..
 
-            if(type.toLowerCase() === 'array'){
-                res = 'string[]'; 
+                res = res.replace('Scoped ', ''); //they throw this on cause global scope copies that are different exist... but for us we clear..
+                res = res.replace(' object', '');
+                if (!typeWasInMap) {
+                    typeNotTranslated = true;
+                    res = 'any'; //default to "any" as this will sovel majority of issues we will see crap up.
+                    this.returnTypesNotMapped.push({ identifier: identifier, original_type: type });
+                }
             }
-
 
         }
 
-        //handle other random cleanup..
-
-        res = res.replace('Scoped ', ''); //they throw this on cause global scope copies that are different exist... but for us we clear..
 
         return res;
-        
+
+    }
+
+    getReturnTypesNotMapped() {
+        return this.returnTypesNotMapped;
     }
 }
 
