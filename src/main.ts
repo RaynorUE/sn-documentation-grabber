@@ -84,7 +84,7 @@ declare var window: any
 
             await new Downloader().zipSNDocData(latestVersion,result);
 
-            console.log({ nameSpaceNames: nameSpaceNames, classNames: classNames, methodReturnTypes:methodReturnTypes, propertyTypes:propertyTypes, methodReturnsNotMapped: snDocUtil.getReturnTypesNotMapped(), methodParamTypes: methodParamTypes})
+            console.log({ nameSpaceNames: nameSpaceNames, classNames: classNames, methodReturnTypes:methodReturnTypes, propertyTypes:propertyTypes, methodReturnsNotMapped: snDocUtil.getReturnTypesNotMapped(), methodParamTypes: methodParamTypes, methodParamTypesNotMapped: snDocUtil.getParamTypesNotMapped()})
 
         }
     }

@@ -122,7 +122,7 @@ export class SNDocData {
                                             var paramData: ServerScopedConverted.ServerMethodParamItem = {
                                                 order: methodDetail.order,
                                                 name: methodDetail.name,
-                                                type: methodDetail.text || "",
+                                                type: this.convertSNParamTypesToTSTypes(methodItem.dc_identifier, methodDetail.name, methodDetail.text || ""),
                                                 description: tdService.turndown(methodDetail.text2 || "")
                                             }
 
@@ -319,7 +319,7 @@ export class SNDocData {
     }
 
     convertSNParamTypesToTSTypes(methodIdentifier: string, paramName:string, type: string){
-        let res = undefined;
+        let res = type;
 
         const map:{identifier: string, paramName: string, type: string}[] = require('./snDocDataMaps/snParamTypesToTSTypes.json');
 
@@ -347,6 +347,7 @@ export class SNDocData {
                 this.paramTypesNotMapped.push({ methodIdentifier: methodIdentifier, paramName: paramName, original_type: type });
             }
         }
+        return res;
     }
 
     checkValidTypes(type:string):boolean {
@@ -377,7 +378,7 @@ export class SNDocData {
         var anyArrayTypes = ["array", "List", "ArrayList"];
         var anyOrUndefinedTypes = ["optional","Optional","Optional API", "OptionalAPI"];
         var anyTypes = ["Any"]
-        var nameValueTypes =["MapString", "JSON", "JSON key/value pairs", "Map"];
+        var nameValueTypes =["MapString", "JSON", "JSON key/value pairs", "Map", "Object"];
         
         
         if(stringTypes.includes(type)) {
@@ -405,6 +406,10 @@ export class SNDocData {
 
     getReturnTypesNotMapped() {
         return this.returnTypesNotMapped;
+    }
+
+    getParamTypesNotMapped(){
+        return this.paramTypesNotMapped;
     }
 }
 
