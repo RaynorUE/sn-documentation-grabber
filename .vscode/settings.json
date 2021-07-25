@@ -1,9 +1,40 @@
 {
     "json.schemas": [
         {
+            "fileMatch": ["snParamTypesToTSTypes.json"],
+            "schema": {
+                "type":"array",
+                "items":{
+                    "type":"object",
+                    "properties": {
+                        "identifier":{
+                            "type":"string"
+                        },
+                        "type":{
+                            "type":"string"
+                        },
+                        "paramName":{
+                            "type":"string"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "fileMatch": [
+                "validSNTypes.json"
+            ],
+            "schema": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
+        {
             "fileMatch": [
                 "handleClassPropertyTSTypes.json",
-                "snReturnTypesToTSTypes.json"
+                "snMethodReturnTypesToTSTypes.json"
             ],
             "schema": {
                 "type": "array",

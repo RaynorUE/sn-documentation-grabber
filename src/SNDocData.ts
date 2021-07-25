@@ -7,6 +7,7 @@ import TurndownService = require('turndown');
 export class SNDocData {
 
     returnTypesNotMapped: { identifier: string, original_type: string }[] = [];
+    paramTypesNotMapped: {methodIdentifier: string, paramName: string, original_type: string}[] = [];
 
     constructor() {
 
@@ -272,14 +273,18 @@ export class SNDocData {
     }
 
     convertReturnSNTypesToTSTypes(identifier: string, type: string) {
+        
+        //handle some generic cleanup that always seems to be a problem and makes any additional checking a real pain
+        type = type.replace('Scoped ', ''); //they throw this on cause global scope copies that are different exist... but for us we clear..
+        type = type.replace(' object', '');
 
         var res = type || '';
         var typeNotTranslated = false;
         var typeWasInMap = false
 
-        //look in map...
+        //look in map by identifier (meaning we have an explicit replacement). This can be useful when we want to fix SN's weird ones like "array.name" and "array.sys_id" when it's an array of "Defined objects"
         if (identifier) {
-            const map: { identifier: string, type: string }[] = require('./snDocDataMaps/snReturnTypesToTSTypes.json');
+            const map: { identifier: string, type: string }[] = require('./snDocDataMaps/snMethodReturnTypesToTSTypes.json');
 
             let mappedItem = map.find((item) => item.identifier == identifier);
             if (mappedItem) {
@@ -291,47 +296,111 @@ export class SNDocData {
             }
         }
 
+        var validType = this.checkValidTypes(type);
+        var parsedGenericType = this.parseSNGenerics(type);
+
         //cleanup SN's generic types..
         if (res) {
-            if (type === 'object') {
-                res = 'Object';
-            } else if (type === "sys_id" || type === 'String' || type === "StringMap" || type === "String or Number") {
-                res = 'string';
-            } else if (type.toLowerCase() === 'strings') {
-                res = 'string'; //i know this one is weird..
-            } else if (type.toLowerCase() === 'none') {
-                res = 'void';
-            } else if (type === 'Number' || type === "Number (Long)") {
-                res = 'number';
-            } else if (type === 'Boolean') {
-                res = 'boolean';
-            } else if (type.toLowerCase() === 'integer' || type === "int" || type.toLowerCase() == 'decimal') {
-                res = 'number';
-            } else if (type.toLowerCase() === 'array') {
-                res = 'any[]';
-            } else if (type.toLowerCase() === "optional") {
-                res = 'any | undefined';
-            } else if (type === 'Any') {
-                res = 'any';
-            } else if (type === "MapString") {
-                res = 'any'; //this is really an "object" but a generic object?
-            } else {
-                //handle other random cleanup..
-
-                res = res.replace('Scoped ', ''); //they throw this on cause global scope copies that are different exist... but for us we clear..
-                res = res.replace(' object', '');
+            if(validType){
+                res = type; //already valid! woo!
+            } else if (parsedGenericType){
+                res = parsedGenericType;
+            }  else {
                 if (!typeWasInMap) {
                     typeNotTranslated = true;
                     res = 'any'; //default to "any" as this will sovel majority of issues we will see crap up.
                     this.returnTypesNotMapped.push({ identifier: identifier, original_type: type });
                 }
             }
-
         }
-
 
         return res;
 
+    }
+
+    convertSNParamTypesToTSTypes(methodIdentifier: string, paramName:string, type: string){
+        let res = undefined;
+
+        const map:{identifier: string, paramName: string, type: string}[] = require('./snDocDataMaps/snParamTypesToTSTypes.json');
+
+        let typeWasInMap = false;
+        let typeNotTranslated = false;
+
+        let mappedItem = map.find((item) => item.identifier == methodIdentifier && item.paramName == paramName);
+
+        if(mappedItem){
+            res = mappedItem.type;
+            typeWasInMap = true;
+        }
+
+        let validType = this.checkValidTypes(type);
+        let parsedGeneric = this.parseSNGenerics(type);
+
+        if(validType){
+            res = type;
+        } else if(parsedGeneric){
+            res = parsedGeneric;
+        } else {
+            if (!typeWasInMap) {
+                typeNotTranslated = true;
+                res = 'any'; //default to "any" as this will sovel majority of issues we will see crap up.
+                this.paramTypesNotMapped.push({ methodIdentifier: methodIdentifier, paramName: paramName, original_type: type });
+            }
+        }
+    }
+
+    checkValidTypes(type:string):boolean {
+        let res = false;
+
+        var validSNTypes:string[] = require('./snDocDataMaps/validSNTypes.json');
+        if(validSNTypes.includes(type)){
+            res = true;
+        }
+
+        return res;
+    }
+
+    /**
+     * This function is intended to coerce any of ServiceNows "Generic" types to proper JavaScript (JSDoc) / Typescript types. 
+     * Or at the very least, perform some cleanup so the Typescript definitions won't explode... like "String or Object" vs "string | {}"
+     * If parsed type not found, undefined is returned.
+     * @param type The SN Type from docs portal
+     */
+    parseSNGenerics(type: string): string | undefined{
+
+        var res = undefined
+
+        var stringTypes = ["sys_id", "String", "Strings", "strings", "StringMap", "String or Number"];
+        var voidTypes =["void", "none", "None"];
+        var numberTypes = ["Number", "Number (Long)", "integer", "Integer", "int", "decimal", "Decimal", "number"];
+        var booleanTypes = ["Boolean"];
+        var anyArrayTypes = ["array", "List", "ArrayList"];
+        var anyOrUndefinedTypes = ["optional","Optional","Optional API", "OptionalAPI"];
+        var anyTypes = ["Any"]
+        var nameValueTypes =["MapString", "JSON", "JSON key/value pairs", "Map"];
+        
+        
+        if(stringTypes.includes(type)) {
+            res = 'string';
+        } else if (voidTypes.includes(type)) {
+            res = 'void';
+        } else if (numberTypes.includes(type)) {
+            res = 'number';
+        } else if (booleanTypes.includes(type)) {
+            res = 'boolean';
+        } else if (anyArrayTypes.includes(type)) {
+            res = 'any[]';
+        } else if (anyOrUndefinedTypes.includes(type)) {
+            res = 'any | undefined';
+        } else if (anyTypes.includes(type)) {
+            res = 'any';
+        } else if (nameValueTypes.includes(type) || (type.toLowerCase().indexOf('object') && type.indexOf('.') == -1)) {
+            //The IndexOf and lowercase check are looking for "object" declreations that is not SN detailing out the object properties since we want those to still be reported as this time
+            //so whenever I get around to caring about those classes I can fix their maps.
+            res = '{[fieldName: string]: string}'; //this is really an "object" but a generic object?
+        }
+
+        return res;
     }
 
     getReturnTypesNotMapped() {

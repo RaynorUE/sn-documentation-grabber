@@ -5,17 +5,17 @@ import { ServerScopedConverted } from '../@Types/snDocsSite/serverScopedConverte
 export class Downloader {
     constructor(){}
 
-    async zipSNDocData(data:ServerScopedConverted.ServerNamespaceItem[]){
+    async zipSNDocData(releaseName:string, data:ServerScopedConverted.ServerNamespaceItem[]){
 
         let zip = new JSZip();
         data.forEach((nameSpace) => {
-            let fileName = `${nameSpace.namespace || "no-namespace"}.json`;
+            let fileName = `${releaseName}_${nameSpace.namespace || "no-namespace"}.json`;
             zip.file(fileName, JSON.stringify(nameSpace, null, '\t'));
         })
 
         let zipResult = await zip.generateAsync({type: "blob"});
         if(zipResult){
-            FileSaver.saveAs(zipResult, 'SNDocData.zip');
+            FileSaver.saveAs(zipResult, `${releaseName}_SNDocData`);
         }
         
     }

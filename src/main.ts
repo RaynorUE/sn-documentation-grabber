@@ -22,7 +22,9 @@ declare var window: any
             let nameSpaceNames: any[] = [];
             let classNames: any[] = [];
             let methodReturnTypes: any[] = [];
+            let methodParamTypes: any[] = [];
             let propertyTypes: any[] = [];
+
             result.forEach((nameSpaceData) => {
                 
                 nameSpaceNames.push({
@@ -39,6 +41,11 @@ declare var window: any
                         if(!methodReturnTypes.find(type => type.type == method.return.type)){
                             methodReturnTypes.push({identifier: method.identifier, type: method.return.type});
                         }
+                        method.params.forEach((param) => {
+                            if(!methodParamTypes.find(type => type.type == param.type)){
+                                methodParamTypes.push({identifier: method.identifier, type:param.type});
+                            }
+                        })
                     })
                     classItem.properties.forEach((property) => {
                         property.params.forEach((param) => {
@@ -75,9 +82,9 @@ declare var window: any
 
             })
 
-            await new Downloader().zipSNDocData(result);
+            await new Downloader().zipSNDocData(latestVersion,result);
 
-            console.log({ nameSpaceNames: nameSpaceNames, classNames: classNames, methodReturnTypes:methodReturnTypes, propertyTypes:propertyTypes })
+            console.log({ nameSpaceNames: nameSpaceNames, classNames: classNames, methodReturnTypes:methodReturnTypes, propertyTypes:propertyTypes, methodReturnsNotMapped: snDocUtil.getReturnTypesNotMapped(), methodParamTypes: methodParamTypes})
 
         }
     }
