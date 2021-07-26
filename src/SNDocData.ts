@@ -6,8 +6,19 @@ import TurndownService = require('turndown');
 
 export class SNDocData {
 
-    returnTypesNotMapped: { identifier: string, original_type: string }[] = [];
-    paramTypesNotMapped: {methodIdentifier: string, paramName: string, original_type: string}[] = [];
+    dataNotMapped:ServerScopedConverted.DataNotMapped = {
+        paramTypesNotMapped: [],
+        returnTypesNotMapped: []
+    }
+
+    uniqueItemLists:ServerScopedConverted.UniqueItemLists = {
+        paramTypes: [],
+        methodReturnTypes: [],
+        classNames: []
+
+    }
+    
+
 
     constructor() {
 
@@ -54,8 +65,11 @@ export class SNDocData {
                         constructor: undefined,
                         methods: [],
                         properties: [],
-                        extras: []
+                        extras: [],
+                        params: []
                     }
+
+                    this.addUniqueClassName(newClassItem.identifier, newClassItem.name);
 
                     let classSpecificData = {
                         action: "api.docs",
@@ -117,7 +131,7 @@ export class SNDocData {
                                         } else if (type == "Return") {
                                             newMethodItem.return.type = this.convertReturnSNTypesToTSTypes(methodItem.dc_identifier, methodDetail.name);
                                             newMethodItem.return.description = tdService.turndown(methodDetail.text || "");
-
+                                            this.addUniqueMethodReturnType(newMethodItem.identifier, newMethodItem.return.type);
                                         } else if (type == "Parameter") {
                                             var paramData: ServerScopedConverted.ServerMethodParamItem = {
                                                 order: methodDetail.order,
@@ -125,6 +139,8 @@ export class SNDocData {
                                                 type: this.convertSNParamTypesToTSTypes(methodItem.dc_identifier, methodDetail.name, methodDetail.text || ""),
                                                 description: tdService.turndown(methodDetail.text2 || "")
                                             }
+
+                                            this.addUniqueParamType(newMethodItem.type, paramData.name, paramData.type);
 
                                             newMethodItem.params.push(paramData);
 
@@ -163,8 +179,6 @@ export class SNDocData {
         });
 
         var finalData: any = await Promise.all(convertedNameSpaces);
-        //console.log(`${releaseName}: `, JSON.stringify(finalData, null, 4));
-
         return finalData;
 
     }
@@ -261,17 +275,6 @@ export class SNDocData {
         return undefined;
     }
 
-    /**
-     * Handle SN's goofy param types where they randomly decide to through HTML in there?
-     * @param identifier 
-     */
-    handleClassPropertyTSTypes(identifier: string) {
-
-        //propertyTypes 
-
-        const map: { identifier: string, type: string }[] = require('./snDocDataMaps/handleClassPropertyTSTypes.json');
-    }
-
     convertReturnSNTypesToTSTypes(identifier: string, type: string) {
         
         //handle some generic cleanup that always seems to be a problem and makes any additional checking a real pain
@@ -279,7 +282,6 @@ export class SNDocData {
         type = type.replace(' object', '');
 
         var res = type || '';
-        var typeNotTranslated = false;
         var typeWasInMap = false
 
         //look in map by identifier (meaning we have an explicit replacement). This can be useful when we want to fix SN's weird ones like "array.name" and "array.sys_id" when it's an array of "Defined objects"
@@ -307,9 +309,8 @@ export class SNDocData {
                 res = parsedGenericType;
             }  else {
                 if (!typeWasInMap) {
-                    typeNotTranslated = true;
                     res = 'any'; //default to "any" as this will sovel majority of issues we will see crap up.
-                    this.returnTypesNotMapped.push({ identifier: identifier, original_type: type });
+                    this.addReturnTypeNotMapped(identifier, type);
                 }
             }
         }
@@ -318,15 +319,14 @@ export class SNDocData {
 
     }
 
-    convertSNParamTypesToTSTypes(methodIdentifier: string, paramName:string, type: string){
+    convertSNParamTypesToTSTypes(identifier: string, paramName:string, type: string){
         let res = type;
 
         const map:{identifier: string, paramName: string, type: string}[] = require('./snDocDataMaps/snParamTypesToTSTypes.json');
 
         let typeWasInMap = false;
-        let typeNotTranslated = false;
 
-        let mappedItem = map.find((item) => item.identifier == methodIdentifier && item.paramName == paramName);
+        let mappedItem = map.find((item) => item.identifier == identifier && item.paramName == paramName);
 
         if(mappedItem){
             res = mappedItem.type;
@@ -342,9 +342,8 @@ export class SNDocData {
             res = parsedGeneric;
         } else {
             if (!typeWasInMap) {
-                typeNotTranslated = true;
                 res = 'any'; //default to "any" as this will sovel majority of issues we will see crap up.
-                this.paramTypesNotMapped.push({ methodIdentifier: methodIdentifier, paramName: paramName, original_type: type });
+                this.addParamTypesNotMapped(identifier, paramName, type);
             }
         }
         return res;
@@ -379,6 +378,13 @@ export class SNDocData {
         var anyOrUndefinedTypes = ["optional","Optional","Optional API", "OptionalAPI"];
         var anyTypes = ["Any"]
         var nameValueTypes =["MapString", "JSON", "JSON key/value pairs", "Map", "Object"];
+
+        //SN includes hyperlink html markup in the return type to link back to things (like GlideRecord)... appreciate it y'all but need to get closer to this being pure data and using JSX to handle your aHrefs for you.
+
+        var htmlMarkupMatch = type.match(/>(.*)</); //this is lazy and assumes only one html tag... though that seems consistent so far!
+        if(htmlMarkupMatch){
+            type = htmlMarkupMatch[1] || type; //if for some reason there is a match but not a "grouping" match we will assume the original type!
+        }
         
         
         if(stringTypes.includes(type)) {
@@ -404,12 +410,38 @@ export class SNDocData {
         return res;
     }
 
-    getReturnTypesNotMapped() {
-        return this.returnTypesNotMapped;
+    addUniqueMethodReturnType(identifier: string, type: string){
+        //add the identifier as some kind of reference point to learn more since we've mushed the data in this class..
+        if(!this.uniqueItemLists.methodReturnTypes.find(mReturn => mReturn.type == type)){
+            this.uniqueItemLists.methodReturnTypes.push({identifier:identifier, type:type});
+        }
+
+    }
+    addUniqueParamType(identifier: string, paramName: string, type:string){
+        if(!this.uniqueItemLists.paramTypes.find(param => param.type == type)){
+            this.uniqueItemLists.paramTypes.push({identifier: identifier, paramName: paramName, type:type});
+        }
     }
 
-    getParamTypesNotMapped(){
-        return this.paramTypesNotMapped;
+    addUniqueClassName(identifier: string, className: string){
+        this.uniqueItemLists.classNames.push({identifier: identifier, className: className})
     }
+
+    addReturnTypeNotMapped(identifier: string, type: string){
+        this.dataNotMapped.returnTypesNotMapped.push({identifier:identifier, type:type});
+    }
+
+    addParamTypesNotMapped(identifier: string, paramName: string, type: string){
+        this.dataNotMapped.paramTypesNotMapped.push({identifier:identifier, paramName:paramName, type:type});
+    }
+
+    getDataNotMapped() {
+        return this.dataNotMapped;
+    }
+
+    getUniqueItemList() {
+        return this.uniqueItemLists;
+    }
+
 }
 

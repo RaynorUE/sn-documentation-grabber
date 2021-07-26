@@ -5,17 +5,19 @@ import { ServerScopedConverted } from '../@Types/snDocsSite/serverScopedConverte
 export class Downloader {
     constructor(){}
 
-    async zipSNDocData(releaseName:string, data:ServerScopedConverted.ServerNamespaceItem[]){
+    async zipSNDocData(docData: {releaseName:string, data:ServerScopedConverted.ServerNamespaceItem[]}[]){
 
         let zip = new JSZip();
-        data.forEach((nameSpace) => {
-            let fileName = `${releaseName}_${nameSpace.namespace || "no-namespace"}.json`;
-            zip.file(fileName, JSON.stringify(nameSpace, null, '\t'));
+        docData.forEach((docItem) => {
+            docItem.data.forEach((nameSpace) => {
+                let fileName = `${docItem.releaseName}_${nameSpace.namespace || "no-namespace"}.json`;
+                zip.file(fileName, JSON.stringify(nameSpace, null, '\t'));
+            })
         })
 
         let zipResult = await zip.generateAsync({type: "blob"});
         if(zipResult){
-            FileSaver.saveAs(zipResult, `${releaseName}_SNDocData`);
+            FileSaver.saveAs(zipResult, `SNDocData`);
         }
         
     }
@@ -24,4 +26,18 @@ export class Downloader {
 
     }
 
+    async zipAnalystsData(analysis: {releaseName:string, data:any}[]){
+        let zip = new JSZip();
+
+        analysis.forEach((item) =>{
+            let fileName = `${item.releaseName}_Analysis.json`;
+            zip.file(fileName, JSON.stringify(item.data, null, '\t'));
+        });
+        
+
+        let zipResult = await zip.generateAsync({type: "blob"});
+        if(zipResult){
+            FileSaver.saveAs(zipResult, `SNDocDataAnalysis`);
+        }
+    }
 }

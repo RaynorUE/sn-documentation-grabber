@@ -17,6 +17,7 @@ export namespace ServerScopedConverted {
         methods: ServerMethodItem[]
         properties: ServerMethodItem[]
         extras: ServerMethodItem[]
+        params: ServerMethodParamItem[]
     }
 
     interface SNConstructor {
@@ -52,5 +53,33 @@ export namespace ServerScopedConverted {
         name: string
         type: string
         description: string
+    }
+
+    interface UniqueItemLists {
+        methodReturnTypes: ReturnTypeMap[],
+        paramTypes: ParamTypesMap[],
+        classNames: ClassNameMap[]
+
+    }
+
+    interface ClassNameMap extends DataNotMappedBase {
+        className: string
+    }
+
+    interface DataNotMapped {
+        returnTypesNotMapped:ReturnTypeMap[]
+        paramTypesNotMapped:ParamTypesMap[]
+    }
+
+    interface ReturnTypeMap extends DataNotMappedBase{
+        type: string
+    }
+
+    interface ParamTypesMap extends DataNotMappedBase{
+        type: string
+        paramName: string
+    }
+    interface DataNotMappedBase {
+        identifier: string
     }
 }
