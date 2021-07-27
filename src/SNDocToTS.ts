@@ -47,7 +47,8 @@ export class SNDocToTS {
                         TSContent.push(`${tabs} * @example ${example.description}`);
                         TSContent.push(`${tabs} * `); //space after description
                         if(example.script){
-                            TSContent.push(`${tabs} * ${example.script.replace(/)}`)
+                            let fixedScript = example.script.replace(/\n/, `${tabs} * `);
+                            TSContent.push(`${tabs} * ${fixedScript}`);
                         }
                         
                     })
