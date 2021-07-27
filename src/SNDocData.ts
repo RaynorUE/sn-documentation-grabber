@@ -63,6 +63,7 @@ export class SNDocData {
                         constName: this.getConstName(classItem.dc_identifier),
                         extensionName: this.getExtensionKey(classItem.dc_identifier),
                         constructor: undefined,
+                        examples: [],
                         methods: [],
                         properties: [],
                         extras: [],
@@ -158,6 +159,13 @@ export class SNDocData {
                                     newClassItem.constructor = newMethodItem;
                                 } else if (propertyType == "Method") {
                                     newClassItem.methods.push(newMethodItem);
+                                } else if(propertyType == 'Example'){
+                                    var exampleData: ServerScopedConverted.ServerMethodExampleItem = {
+                                        order: methodItem.order,
+                                        script: tdService.turndown(methodItem.text || ""),
+                                        description: tdService.turndown(methodItem.text2 || "")
+                                    }
+                                    newClassItem.examples.push(exampleData);
                                 } else {
                                     newClassItem.extras.push(newMethodItem);
                                 }

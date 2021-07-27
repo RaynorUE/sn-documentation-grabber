@@ -13,7 +13,8 @@ export namespace ServerScopedConverted {
         name: string
         constName?: string
         extensionName?: string
-        constructor: ServerMethodItem | undefined
+        constructor: ServerMethodItem | undefined,
+        examples: ServerMethodExampleItem[],
         methods: ServerMethodItem[]
         properties: ServerMethodItem[]
         extras: ServerMethodItem[]

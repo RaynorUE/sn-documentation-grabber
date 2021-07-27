@@ -39,15 +39,15 @@ export namespace ServerScopedCall {
     }
     
     interface SNClassDataDetail {
-        children: SNClassMethodDetail[],
-        dc_identifier: string,
-        name: string,
-        namespace_id: string,
-        release: string,
-        text: string,
-        text2: string,
-        type: string,
-        sub_type: string,
+        children: SNClassMethodDetail[]
+        dc_identifier: string
+        name: string
+        namespace_id: string
+        release: string
+        text: string
+        text2: string
+        type: string
+        sub_type: string
     
     }
     
@@ -60,6 +60,7 @@ export namespace ServerScopedCall {
         text: string,
         text2: string,
         type: "Constructor" | "Method" | "Property",
+        order: number
     }
     
     interface SNClassMethodSpecifics {
