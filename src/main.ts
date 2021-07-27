@@ -1,6 +1,8 @@
 import { SNDocData } from "./SNDocData";
 import { ServerScopedConverted } from '../@Types/snDocsSite/serverScopedConverted';
 import { Downloader } from './downloader';
+import { SNDocToTS} from './SNDocToTS';
+
 declare var window: any
 
 (async function () {
@@ -29,17 +31,25 @@ declare var window: any
         
         console.log('result: ', result);
         if (result) {
+            
 
+            /*
             await new Downloader().zipSNDocData([{releaseName:latestVersion,data:result}]);
-
+            */
             let analysisData = [{
                 uniqueItemList: snDocUtil.getUniqueItemList(),
                 dataNotMapped: snDocUtil.getDataNotMapped()
             }]
-
+            
             await new Downloader().zipAnalystsData([{releaseName:latestVersion, data:analysisData}])
-
+            
             console.log(analysisData)
+
+            var tsDocResult = new SNDocToTS().convertServerToTS(result);
+
+            await new Downloader().zipTSDocData([{releaseName: latestVersion, data:tsDocResult}])
+
+            console.log(tsDocResult);
 
         }
     }

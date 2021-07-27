@@ -15,6 +15,8 @@
     "browserify": "^17.0.0",
     "file-saver": "^2.0.5",
     "gulp": "^4.0.2",
+    "gulp-buffer": "0.0.2",
+    "gulp-minify": "^3.1.0",
     "gulp-typescript": "^6.0.0-alpha.1",
     "jszip": "^3.7.0",
     "tsify": "^5.0.4",

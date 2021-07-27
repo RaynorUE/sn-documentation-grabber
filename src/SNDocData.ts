@@ -54,6 +54,8 @@ export class SNDocData {
             if (nameSpaceItem.items && nameSpaceItem.items.length > 0) {
 
                 var newServerItemClasses = nameSpaceItem.items.map(async (classItem) => {
+                    
+                    
 
                     let newClassItem: ServerScopedConverted.ServerClassItem = {
                         description: "",
@@ -266,6 +268,10 @@ export class SNDocData {
         if (!res) {
             res = className;
         }
+
+        res = res.replace('- Scoped, Global', '');
+        res = res.replace(' – Scoped, Global', '');
+        res = res.replace(' API', '');
 
         return res;
 
