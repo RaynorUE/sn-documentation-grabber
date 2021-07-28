@@ -3,7 +3,7 @@ export class SNDocToTS {
 
     /**
      * 
-     * @param serverData 
+     * @param serverData
      */
     convertServerToTS(serverData: ServerScopedConverted.ServerNamespaceItem[]) {
 
@@ -39,7 +39,7 @@ export class SNDocToTS {
                 //begin JSDoc
                 TSContent.push(`${tabs}/** `);
                 if (classItem.description) {
-                    TSContent.push(`${tabs} * ${classItem.description.replace(/\n/g, `\n${tabs} * `)}`);
+                    TSContent.push(`${tabs} * ${this.convertMultiLineComment(tabs, classItem.description)}`);
                     TSContent.push(`${tabs} * `); //space after description
                 }
 
@@ -50,12 +50,12 @@ export class SNDocToTS {
                     classItem.examples.forEach((example) => {
                         if (example.description) {
                             //fixup description..
-                            example.description = example.description.replace(/\n/g, `\n${tabs} * `);
+                            example.description = this.convertMultiLineComment(tabs, example.description);
                         }
                         TSContent.push(`${tabs} * @example ${example.description}`);
                         TSContent.push(`${tabs} * `); //space after description
                         if (example.script) {
-                            let fixedScript = example.script.replace(/\n/, `${tabs} * `);
+                            let fixedScript = this.convertMultiLineComment(tabs, example.script);
                             TSContent.push(`${tabs} * ${fixedScript}`);
                         }
 
@@ -101,7 +101,65 @@ export class SNDocToTS {
                     if(constructorFunc.return.type){
                         returnType = `: ${constructorFunc.return.type}`;
                     }
-                    TSContent.push(`${tabs} constructor(${constructorParams})${returnType}`);
+                    TSContent.push(`${tabs}constructor(${constructorParams})${returnType}`);
+                    TSContent.push(`${tabs}`);
+
+                    //now work through properties...
+                    classItem.methods.forEach((methodItem) => {
+                        
+                        //start JSDoc
+                        TSContent.push(`${tabs}/**`);
+                        TSContent.push(`${tabs} *`);
+                        if(methodItem.short_description){
+                            TSContent.push(`${tabs} * ${this.convertMultiLineComment(tabs, methodItem.short_description)}`);
+                            TSContent.push(`${tabs} *`);
+                        }
+
+                        if(methodItem.description){
+                            TSContent.push(`${tabs} * ${this.convertMultiLineComment(tabs, methodItem.description)}`);
+                            TSContent.push(`${tabs} *`);
+                        }
+
+                        if(methodItem.params){
+                            methodItem.params.sort((a, b) => a.order > b.order ? 1: -1).forEach((param) => {
+                                TSContent.push(`${tabs} * @param {${param.type}} ${param.description}`);
+                            });
+                            TSContent.push(`${tabs} *`);
+                        }
+
+                        if(methodItem.return.type){
+                            TSContent.push(`${tabs} * @returns {${methodItem.return.type}} ${methodItem.return.description}`);
+                        }
+
+                        //close JSDoc Block
+                        TSContent.push(`${tabs} */`);
+
+                        //declare function? what if I am a property?
+
+                        if(methodItem.type == 'Method'){
+                            let returnType = '';
+                            if(methodItem.return.type){
+                                returnType = `: ${methodItem.return.type}`;
+                            }
+                            TSContent.push(`${tabs}${methodItem.name}(${this.buildFuncParams(methodItem.params)})`);
+                        }
+
+                        if(methodItem.type == 'Property'){
+                            let returnType = '';
+                            if(methodItem.return.type){
+                                returnType = `: ${methodItem.return.type}`;
+                            }
+
+                            TSContent.push(`${tabs}${methodItem.name}${returnType}`);
+                        }
+
+
+
+                        TSContent.push(`${tabs} *`);
+
+                    })
+
+                    //now work through methods....
 
                 }
 
@@ -145,6 +203,10 @@ export class SNDocToTS {
         .map((param) => `${param.name}: ${param.type}`).join(', ');
 
         
+    }
+
+    private convertMultiLineComment(tabs: string, text:string){
+        return text.replace(/\n/g, `\n${tabs} * `);
     }
 }
 
