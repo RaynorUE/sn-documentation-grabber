@@ -1,0 +1,13 @@
+[{
+    "identifier": "r_SGSYS-eventQSched_S_O_S_S_O",
+    "paramName": "instance",
+    "type": "GlideRecord | string"
+},
+{
+    "identifier": "r_SGSYS-eventQSched_S_O_S_S_O",
+    "paramName": "expiration",
+    "type": "GlideDateTime"
+},
+{"identifier": "r_ScopedGlideRecordAddFunction_O",
+    "paramName": "function",
+    "type": "GlideDBFunctionBuilder"}]
