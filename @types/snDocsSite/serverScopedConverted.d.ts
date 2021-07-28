@@ -69,7 +69,8 @@ export namespace ServerScopedConverted {
 
     interface DataNotMapped {
         returnTypesNotMapped:ReturnTypeMap[]
-        paramTypesNotMapped:ParamTypesMap[]
+        paramTypesNotMapped:ParamTypesMap[],
+        extras: any[]
     }
 
     interface ReturnTypeMap extends DataNotMappedBase{

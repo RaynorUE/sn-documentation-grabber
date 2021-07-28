@@ -1,14 +1,15 @@
 declare const window: any
 import { ServerScopedConverted } from '../@Types/snDocsSite/serverScopedConverted'
 import { ServerScopedCall } from '../@Types/snDocsSite/serverScopedCall';
-import TurndownService = require('turndown');
+import * as TurndownService from 'turndown';
 
 
-export class SNDocData {
+export class SNServerDocData {
 
     dataNotMapped:ServerScopedConverted.DataNotMapped = {
         paramTypesNotMapped: [],
-        returnTypesNotMapped: []
+        returnTypesNotMapped: [],
+        extras: []
     }
 
     uniqueItemLists:ServerScopedConverted.UniqueItemLists = {
@@ -18,8 +19,6 @@ export class SNDocData {
 
     }
     
-
-
     constructor() {
 
     }
@@ -42,9 +41,15 @@ export class SNDocData {
         }
 
         const convertedNameSpaces = nameSpaceDocs.server.map(async (nameSpaceItem) => {
+            
+            let nameSpaceName = nameSpaceItem.name;
+            
+            //Covering where SN put a label after the namespace name..
+            nameSpaceName = nameSpaceName.replace(/ - [\w\s]*/, '');
+
             let newNameSpaceItem: ServerScopedConverted.ServerNamespaceItem = {
                 identifier: nameSpaceItem.dc_identifier,
-                namespace: nameSpaceItem.dc_identifier == "no-namespace" ? "" : nameSpaceItem.name.replace('-namespace', ''),
+                namespace: nameSpaceItem.dc_identifier == "no-namespace" ? "" : nameSpaceName,
                 classes: []
             }
 
@@ -149,6 +154,7 @@ export class SNDocData {
 
                                         } else {
                                             //just push into extras to sort out later..
+                                            this.addExtrasNotMapped(methodItem.dc_identifier, methodDetail);
                                             newMethodItem.extras.push(methodDetail);
                                         }
 
@@ -169,6 +175,7 @@ export class SNDocData {
                                     }
                                     newClassItem.examples.push(exampleData);
                                 } else {
+                                    this.addExtrasNotMapped(classItem.dc_identifier, newMethodItem);
                                     newClassItem.extras.push(newMethodItem);
                                 }
                             })
@@ -229,7 +236,7 @@ export class SNDocData {
     getConstName(identifier: string) {
         //this will be a simple map of "identifier" to get if there is a "const" that should be declared for it
 
-        const map: { identifier: string, constName: string }[] = require("./snDocDataMaps/getConstNameMap.json");
+        const map: { identifier: string, constName: string }[] = require("./snDocDataMaps/ServerScoped/getConstNameMap.json");
 
         var mapItem = map.find(ident => identifier == ident.identifier);
         if (mapItem) {
@@ -245,7 +252,7 @@ export class SNDocData {
     fixClassName(identifer: string, className: string) {
 
 
-        const map: { identifer: string, className: string }[] = require('./snDocDataMaps/fixClassNameMap.json');
+        const map: { identifer: string, className: string }[] = require('./snDocDataMaps/ServerScoped/fixClassNameMap.json');
 
         var res;
 
@@ -294,7 +301,7 @@ export class SNDocData {
 
     getExtensionKey(identifer: string) {
 
-        const map: { identifier: string, extensionName: string }[] = require('./snDocDataMaps/getExtensionKeyMap.json');
+        const map: { identifier: string, extensionName: string }[] = require('./snDocDataMaps/ServerScoped/getExtensionKeyMap.json');
 
         var mapItem = map.find(ident => identifer == ident.identifier);
         if (mapItem) {
@@ -315,7 +322,7 @@ export class SNDocData {
 
         //look in map by identifier (meaning we have an explicit replacement). This can be useful when we want to fix SN's weird ones like "array.name" and "array.sys_id" when it's an array of "Defined objects"
         if (identifier) {
-            const map: { identifier: string, type: string }[] = require('./snDocDataMaps/snMethodReturnTypesToTSTypes.json');
+            const map: { identifier: string, type: string }[] = require('./snDocDataMaps/ServerScoped/snMethodReturnTypesToTSTypes.json');
 
             let mappedItem = map.find((item) => item.identifier == identifier);
             if (mappedItem) {
@@ -351,7 +358,7 @@ export class SNDocData {
     convertSNParamTypesToTSTypes(identifier: string, paramName:string, type: string){
         let res = type;
 
-        const map:{identifier: string, paramName: string, type: string}[] = require('./snDocDataMaps/snParamTypesToTSTypes.json');
+        const map:{identifier: string, paramName: string, type: string}[] = require('./snDocDataMaps/ServerScoped/snParamTypesToTSTypes.json');
 
         let typeWasInMap = false;
 
@@ -381,7 +388,7 @@ export class SNDocData {
     checkValidTypes(type:string):boolean {
         let res = false;
 
-        var validSNTypes:string[] = require('./snDocDataMaps/validSNTypes.json');
+        var validSNTypes:string[] = require('./snDocDataMaps/ServerScoped/validSNTypes.json');
         if(validSNTypes.includes(type)){
             res = true;
         }
@@ -437,6 +444,10 @@ export class SNDocData {
         }
 
         return res;
+    }
+
+    addExtrasNotMapped(identifier:string, data:any){
+        this.dataNotMapped.extras.push({identifier:identifier, data:data});
     }
 
     addUniqueMethodReturnType(identifier: string, type: string){

@@ -41,6 +41,7 @@ export class SNDocToTS {
                 }
 
                 if(classItem.constName){
+                    classItem.name = classItem.identifier;
                     constExtensionsAtEnd.push(`declare const ${classItem.constName}: ${classItem.name}`);
                 }
 

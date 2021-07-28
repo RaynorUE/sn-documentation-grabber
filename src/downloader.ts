@@ -1,5 +1,5 @@
-import FileSaver = require('file-saver');
-import JSZip = require('jszip');
+import * as FileSaver from 'file-saver';
+import * as JSZip from 'jszip';
 import { ServerScopedConverted } from '../@Types/snDocsSite/serverScopedConverted'
 import { TSDocResult } from './SNDocToTS';
 
@@ -27,9 +27,10 @@ export class Downloader {
 
         let zip = new JSZip();
         docData.forEach((docItem) => {
+            const folder = zip.folder(docItem.releaseName);
             docItem.data.forEach((nameSpace) => {
-                let fileName = `${docItem.releaseName}_${nameSpace.namespace || "no-namespace"}.d.ts`;
-                zip.file(fileName, nameSpace.content.join('\n'))
+                let fileName = `${nameSpace.namespace || "no-namespace"}.d.ts`;
+                folder.file(fileName, nameSpace.content.join('\n'))
             })
         })
 
