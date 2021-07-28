@@ -17,7 +17,7 @@ export class SNDocToTS {
 
             let TSContent: string[] = [];
             let tabs = ''; //keep track of layers and use this to determine our tabs.. That's right, tabs over spaces!
-            let constExtensionsAtEnd = [];
+            let constExtensionsAtEnd:string[] = [];
 
             //if not no-namespace open declare namespace
             if (docResult.namespace) {
@@ -35,6 +35,14 @@ export class SNDocToTS {
             //and thankfully the described why in their description: For scoped applications, the JSON API uses static methods that call the JavaScript ES5 native JSON object.
             //also easier to skip here for now. Need to re-think the nested Asyncs I got going on in SNDoc data and just "get data, build one huge set of arrays and reloop to join it all"...
             classes.filter((item) => item.identifier != 'JSONScopedAPI').forEach((classItem) => {
+
+                if(classItem.extensionName){
+                    constExtensionsAtEnd.push(`declare class ${classItem.extensionName} extends ${classItem.name}{}`)
+                }
+
+                if(classItem.constName){
+                    constExtensionsAtEnd.push(`declare const ${classItem.constName}: ${classItem.name}`);
+                }
 
                 //begin JSDoc
                 TSContent.push(`${tabs}/** `);
@@ -71,14 +79,15 @@ export class SNDocToTS {
                 TSContent.push(`${tabs} */`);
 
                 //Open class
-                TSContent.push(`${tabs}class ${classItem.name} {`);
+                let declareWord = nameSpace.identifier == 'no-namespace' ? 'declare ' : '';
+                TSContent.push(`${tabs}${declareWord}class ${classItem.name} {`);
                 TSContent.push(`${tabs}`)
 
                 //increase tabs..
                 tabs += '\t';
 
                 //Constructor if exists.
-                if(classItem.constructor){
+                if (classItem.constructor) {
                     const constructorFunc = classItem.constructor;
                     const constructorParams = this.buildFuncParams(constructorFunc.params);
 
@@ -86,84 +95,81 @@ export class SNDocToTS {
 
                     TSContent.push(`${tabs}/**`);
                     TSContent.push(`${tabs} *`);
-                    if(constructorFunc.params){
+                    if (constructorFunc.params) {
                         constructorFunc.params.sort((a, b) => a.order > b.order ? 1 : -1).forEach((param) => {
-                            TSContent.push(`${tabs} * @param {${param.type}} ${param.description}`);
+                            TSContent.push(`${tabs} * @param {${param.type}} ${param.name} ${this.convertMultiLineComment(tabs, param.description)}`);
                         });
                     }
                     //JSDoc Block close
                     TSContent.push(`${tabs} *`);
                     TSContent.push(`${tabs} */`);
 
-                    
+
                     //declare constructor
                     let returnType = '';
-                    if(constructorFunc.return.type){
+                    if (constructorFunc.return.type) {
                         returnType = `: ${constructorFunc.return.type}`;
                     }
                     TSContent.push(`${tabs}constructor(${constructorParams})${returnType}`);
                     TSContent.push(`${tabs}`);
-
-                    //now work through properties...
-                    classItem.methods.forEach((methodItem) => {
-                        
-                        //start JSDoc
-                        TSContent.push(`${tabs}/**`);
-                        TSContent.push(`${tabs} *`);
-                        if(methodItem.short_description){
-                            TSContent.push(`${tabs} * ${this.convertMultiLineComment(tabs, methodItem.short_description)}`);
-                            TSContent.push(`${tabs} *`);
-                        }
-
-                        if(methodItem.description){
-                            TSContent.push(`${tabs} * ${this.convertMultiLineComment(tabs, methodItem.description)}`);
-                            TSContent.push(`${tabs} *`);
-                        }
-
-                        if(methodItem.params){
-                            methodItem.params.sort((a, b) => a.order > b.order ? 1: -1).forEach((param) => {
-                                TSContent.push(`${tabs} * @param {${param.type}} ${param.description}`);
-                            });
-                            TSContent.push(`${tabs} *`);
-                        }
-
-                        if(methodItem.return.type){
-                            TSContent.push(`${tabs} * @returns {${methodItem.return.type}} ${methodItem.return.description}`);
-                        }
-
-                        //close JSDoc Block
-                        TSContent.push(`${tabs} */`);
-
-                        //declare function? what if I am a property?
-
-                        if(methodItem.type == 'Method'){
-                            let returnType = '';
-                            if(methodItem.return.type){
-                                returnType = `: ${methodItem.return.type}`;
-                            }
-                            TSContent.push(`${tabs}${methodItem.name}(${this.buildFuncParams(methodItem.params)})`);
-                        }
-
-                        if(methodItem.type == 'Property'){
-                            let returnType = '';
-                            if(methodItem.return.type){
-                                returnType = `: ${methodItem.return.type}`;
-                            }
-
-                            TSContent.push(`${tabs}${methodItem.name}${returnType}`);
-                        }
-
-
-
-                        TSContent.push(`${tabs} *`);
-
-                    })
-
-                    //now work through methods....
-
                 }
 
+                //now work through properties...
+                classItem.methods.forEach((methodItem) => {
 
+                    //start JSDoc
+                    TSContent.push(`${tabs}/**`);
+                    TSContent.push(`${tabs} *`);
+                    if (methodItem.short_description) {
+                        TSContent.push(`${tabs} * ${this.convertMultiLineComment(tabs, this.convertMultiLineComment(tabs, methodItem.short_description))}`);
+                        TSContent.push(`${tabs} *`);
+                    }
+
+                    if (methodItem.description) {
+                        TSContent.push(`${tabs} * ${this.convertMultiLineComment(tabs, this.convertMultiLineComment(tabs, methodItem.description))}`);
+                        TSContent.push(`${tabs} *`);
+                    }
+
+                    if (methodItem.params) {
+                        methodItem.params.sort((a, b) => a.order > b.order ? 1 : -1).forEach((param) => {
+                            TSContent.push(`${tabs} * @param {${param.type}} ${param.name} ${this.convertMultiLineComment(tabs, param.description)}`);
+                        });
+                        TSContent.push(`${tabs} *`);
+                    }
+
+                    if (methodItem.return.type) {
+                        TSContent.push(`${tabs} * @returns {${methodItem.return.type}} ${this.convertMultiLineComment(tabs, methodItem.return.description)}`);
+                    }
+
+                    //close JSDoc Block
+                    TSContent.push(`${tabs} */`);
+
+                    //declare function? what if I am a property?
+
+                    if (methodItem.type == 'Method') {
+                        let returnType = '';
+                        if (methodItem.return.type) {
+                            returnType = `: ${methodItem.return.type}`;
+                        }
+                        TSContent.push(`${tabs}${methodItem.name}(${this.buildFuncParams(methodItem.params)})${returnType}`);
+                    }
+
+                    if (methodItem.type == 'Property') {
+                        let returnType = '';
+                        if (methodItem.return.type) {
+                            returnType = `: ${methodItem.return.type}`;
+                        }
+
+                        TSContent.push(`${tabs}${methodItem.name}${returnType}`);
+                    }
+
+
+
+                    TSContent.push(`${tabs}`);
+
+                })
+
+                //now work through methods....
 
                 //close class
                 tabs = tabs.replace(/\t$/, ''); //remove a tab
@@ -176,6 +182,8 @@ export class SNDocToTS {
                 TSContent.push(`}`);
                 tabs = tabs.replace(/\t$/, ''); //remove a tab
             }
+
+            TSContent = TSContent.concat(constExtensionsAtEnd);
 
             docResult.content = TSContent;
 
@@ -192,21 +200,31 @@ export class SNDocToTS {
      * 
      * For example, myFunc(${params}) needs to be myFunc(param1:string, param2:string[], etc);
      */
-    private buildFuncParams(paramsList:ServerScopedConverted.ServerMethodParamItem[]): string{
+    private buildFuncParams(paramsList: ServerScopedConverted.ServerMethodParamItem[]): string {
 
-        if(paramsList.length === 0){
+        if (paramsList.length === 0) {
             return '';
         }
-        
-        return paramsList
-        .sort((param1, param2) => param1.order > param2.order ? 1 : -1)
-        .map((param) => `${param.name}: ${param.type}`).join(', ');
 
-        
+        return paramsList
+            .sort((param1, param2) => param1.order > param2.order ? 1 : -1).filter((param) => param.name.indexOf('.') == -1)
+            .map((param) => {
+                //fixup paramNames cause SN still whack-a-do
+                let paramName = param.name.replace(/\s/g, '');
+                if(paramName == 'function'){
+                    paramName = 'func';
+                }
+                return `${paramName}: ${param.type}`;
+            }).join(', ');
+
+
     }
 
-    private convertMultiLineComment(tabs: string, text:string){
-        return text.replace(/\n/g, `\n${tabs} * `);
+    private convertMultiLineComment(tabs: string, text: string) {
+        text = text.replace(/\n/g, `\n${tabs} * `)
+        text = text.replace(/\\/g, '')
+        text = text.replace(/\/\*[0-9\$\_a-zA-Z]+\*\//, '');
+        return text;
     }
 }
 

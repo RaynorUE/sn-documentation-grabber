@@ -44,7 +44,7 @@ export class SNDocData {
         const convertedNameSpaces = nameSpaceDocs.server.map(async (nameSpaceItem) => {
             let newNameSpaceItem: ServerScopedConverted.ServerNamespaceItem = {
                 identifier: nameSpaceItem.dc_identifier,
-                namespace: nameSpaceItem.dc_identifier == "no-namespace" ? "" : nameSpaceItem.name,
+                namespace: nameSpaceItem.dc_identifier == "no-namespace" ? "" : nameSpaceItem.name.replace('-namespace', ''),
                 classes: []
             }
 
@@ -103,7 +103,7 @@ export class SNDocData {
                                     identifier: methodItem.dc_identifier,
                                     short_description: tdService.turndown(methodItem.text || ""),
                                     description: tdService.turndown(methodItem.text2 || ""),
-                                    name: methodItem.name,
+                                    name: this.getJustFuncName(methodItem.name),
                                     type: methodItem.type,
                                     examples: [],
                                     params: [],
@@ -275,6 +275,21 @@ export class SNDocData {
 
         return res;
 
+    }
+
+    /**
+     * Will grab the function name text (not including the open/close parens) we are doing this since we are going to "build" the (params) part
+     * of the function based on the params list... so we want to start "pure"
+     * @param funcName The function name including parens or what have you.
+     */
+    getJustFuncName(funcName: string){
+        let res = funcName;
+        var funcMatch = funcName.match(/([\$\_a-zA-Z0-9]+?)\(|([\$\_a-zA-Z0-9]+?) \(/);
+        if(funcMatch && funcMatch.length && funcMatch.length > 0){
+            res = funcMatch[1];
+        }
+
+        return res;
     }
 
     getExtensionKey(identifer: string) {
